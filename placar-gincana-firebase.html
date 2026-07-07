@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placar da Gincana — Crédito Imobiliário</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --navy:#0F1E38;
+    --navy-2:#16294A;
+    --gold:#E8A93B;
+    --gold-2:#F4C56B;
+    --red:#D64545;
+    --yellow:#E8A93B;
+    --green:#3E9B5C;
+    --paper:#F7F4EC;
+    --ink:#101826;
+    --muted:#8FA0BE;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--navy);
+    color:var(--paper);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display-font{font-family:'Bebas Neue',sans-serif; letter-spacing:0.02em;}
+  #app{min-height:100vh; display:flex; flex-direction:column;}
+
+  /* ---------- HOME ---------- */
+  .home{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:32px 20px; text-align:center; gap:28px;
+  }
+  .home .kicker{
+    color:var(--gold); font-size:13px; letter-spacing:0.18em; text-transform:uppercase; font-weight:700;
+  }
+  .credit-line{
+    color:var(--muted); font-size:12px; font-weight:500; letter-spacing:0.02em; margin-top:-2px;
+  }
+  .home h1{
+    font-family:'Bebas Neue',sans-serif; font-size:52px; line-height:1.02; margin:0; letter-spacing:0.01em;
+  }
+  .home h1 span{color:var(--gold);}
+  .home-buttons{display:flex; flex-direction:column; gap:14px; width:100%; max-width:340px;}
+  .role-btn{
+    border:none; border-radius:14px; padding:22px 20px; font-size:18px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family:'Inter',sans-serif; transition:transform .15s ease;
+  }
+  .role-btn:active{transform:scale(0.97);}
+  .role-btn.primary{background:var(--gold); color:var(--navy);}
+  .role-btn.secondary{background:transparent; color:var(--paper); border:2px solid #2A3E63;}
+  .role-btn .emoji{font-size:22px;}
+  .conn-status{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .conn-dot{width:8px; height:8px; border-radius:50%; background:var(--green);}
+  .conn-dot.off{background:var(--red);}
+
+  /* ---------- JUDGE VIEW ---------- */
+  .judge-wrap{max-width:480px; margin:0 auto; width:100%; padding:16px 16px 40px; flex:1;}
+  .top-bar{display:flex; align-items:center; justify-content:space-between; padding:6px 2px 18px;}
+  .back-link{color:var(--muted); font-size:14px; text-decoration:none; cursor:pointer; background:none; border:none;}
+  .judge-tag{color:var(--gold); font-weight:700; font-size:14px;}
+
+  .name-card{background:var(--navy-2); border-radius:16px; padding:24px; margin-top:40px;}
+  .name-card h2{font-family:'Bebas Neue'; font-size:28px; margin:0 0 6px;}
+  .name-card p{color:var(--muted); font-size:14px; margin:0 0 18px;}
+  .name-card input{
+    width:100%; padding:14px; border-radius:10px; border:2px solid #2A3E63; background:var(--navy);
+    color:var(--paper); font-size:16px; font-family:'Inter'; margin-bottom:14px;
+  }
+  .name-card input:focus{outline:none; border-color:var(--gold);}
+  .go-btn{
+    width:100%; padding:14px; border:none; border-radius:10px; background:var(--gold); color:var(--navy);
+    font-weight:800; font-size:16px; cursor:pointer;
+  }
+
+  .round-tabs{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:18px;}
+  .round-tab{
+    flex:0 0 auto; padding:10px 16px; border-radius:20px; background:var(--navy-2); color:var(--muted);
+    font-weight:700; font-size:14px; cursor:pointer; border:2px solid transparent; white-space:nowrap;
+  }
+  .round-tab.active{background:var(--gold); color:var(--navy); border-color:var(--gold);}
+
+  .objection-card{background:var(--navy-2); border-radius:16px; padding:18px 18px 6px; margin-bottom:16px;}
+  .objection-card .eyebrow{color:var(--gold); font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;}
+  .objection-card h3{font-family:'Bebas Neue'; font-size:24px; margin:4px 0 14px; line-height:1.05;}
+
+  .team-block{background:var(--navy); border-radius:12px; padding:14px; margin-bottom:12px;}
+  .team-block .team-name{font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:space-between;}
+  .team-block .corretor{color:var(--muted); font-size:13px; margin-top:2px;}
+  .score-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:12px;}
+  .score-btn{
+    aspect-ratio:1; border-radius:8px; border:2px solid #2A3E63; background:var(--navy-2); color:var(--paper);
+    font-weight:800; font-size:15px; cursor:pointer; font-family:'Inter';
+  }
+  .score-btn.selected.low{background:var(--red); border-color:var(--red); color:#fff;}
+  .score-btn.selected.mid{background:var(--yellow); border-color:var(--yellow); color:var(--navy);}
+  .score-btn.selected.high{background:var(--green); border-color:var(--green); color:#fff;}
+  .saved-badge{font-size:12px; font-weight:700; margin-top:8px; height:16px;}
+
+  /* ---------- DISPLAY VIEW ---------- */
+  .display-wrap{padding:36px 5vw 60px; max-width:1400px; margin:0 auto; width:100%; flex:1;}
+  .display-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:16px;}
+  .display-header .kicker{color:var(--gold); font-size:14px; letter-spacing:0.15em; text-transform:uppercase; font-weight:700;}
+  .display-header h1{font-family:'Bebas Neue'; font-size:44px; margin:2px 0 0;}
+  .header-actions{display:flex; gap:10px; align-items:center;}
+  .icon-btn{
+    background:var(--navy-2); border:2px solid #2A3E63; color:var(--paper); border-radius:10px; padding:10px 16px;
+    font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter';
+  }
+  .icon-btn:hover{border-color:var(--gold);}
+
+  .scoreboard{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-bottom:32px;}
+  @media (max-width:760px){.scoreboard{grid-template-columns:1fr;}}
+  .team-card{background:var(--navy-2); border-radius:18px; padding:24px; position:relative; overflow:hidden;}
+  .team-card.leader{box-shadow:0 0 0 2px var(--gold) inset;}
+  .team-card .trophy{position:absolute; top:18px; right:20px; font-size:24px;}
+  .team-card .team-title{font-family:'Bebas Neue'; font-size:26px; color:var(--gold); margin:0;}
+  .team-card .total{font-family:'Bebas Neue'; font-size:74px; line-height:1; margin:6px 0 2px;}
+  .team-card .total-label{color:var(--muted); font-size:13px;}
+
+  .rounds-table{width:100%; border-collapse:collapse; margin-top:8px;}
+  .rounds-table th{
+    text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted);
+    padding:8px 10px; border-bottom:1px solid #223458;
+  }
+  .rounds-table td{padding:12px 10px; border-bottom:1px solid #1C2C4C; font-size:14px; vertical-align:middle;}
+  .rounds-table tr.current-round td{background:rgba(232,169,59,0.08);}
+  .theme-cell{font-weight:700;}
+  .theme-cell .rnum{color:var(--gold); font-family:'Bebas Neue'; font-size:18px; margin-right:8px;}
+  .corretor-input, .theme-input{
+    background:transparent; border:1px dashed #2A3E63; color:var(--paper); border-radius:6px; padding:4px 8px;
+    font-size:13px; font-family:'Inter'; width:100%;
+  }
+  .corretor-input:focus, .theme-input:focus{outline:none; border-color:var(--gold); border-style:solid;}
+  .score-pill{
+    display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:28px; padding:0 8px;
+    border-radius:14px; font-weight:800; font-size:13px;
+  }
+  .score-pill.pending{background:#1C2C4C; color:var(--muted); font-weight:600; font-size:11px;}
+  .score-pill.low{background:var(--red); color:#fff;}
+  .score-pill.mid{background:var(--yellow); color:var(--navy);}
+  .score-pill.high{background:var(--green); color:#fff;}
+  .avg-cell{font-family:'Bebas Neue'; font-size:22px;}
+  .judges-list{color:var(--muted); font-size:11px; margin-top:16px; text-align:center;}
+  .table-wrap{background:var(--navy-2); border-radius:16px; padding:20px; margin-bottom:16px;}
+  .table-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .table-title h2{font-family:'Bebas Neue'; font-size:22px; margin:0; color:var(--gold);}
+  .live-dot{width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block; margin-right:6px; animation:pulse 1.6s infinite;}
+  .live-dot.off{background:var(--red); animation:none;}
+  @keyframes pulse{0%{opacity:1;}50%{opacity:0.3;}100%{opacity:1;}}
+  .live-tag{font-size:11px; color:var(--muted); display:flex; align-items:center;}
+
+  /* ---------- QUESTION-ONLY FULLSCREEN VIEW (landscape) ---------- */
+  .question-view{
+    position:fixed; inset:0; background:radial-gradient(circle at 50% 40%, #1A2E52 0%, var(--navy) 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:4vh 6vw; text-align:center; z-index:50;
+  }
+  .question-view .q-eyebrow{
+    color:var(--gold); font-size:clamp(14px,2vw,22px); font-weight:800; letter-spacing:0.2em;
+    text-transform:uppercase; margin-bottom:2vh;
+  }
+  .question-view .q-text{
+    font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,7.5vw,120px); line-height:1.05;
+    max-width:92vw; letter-spacing:0.01em;
+  }
+  .question-view .q-round-tag{
+    position:absolute; top:4vh; left:5vw; color:var(--muted); font-size:clamp(12px,1.4vw,18px);
+    font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .question-view .q-nav{
+    position:absolute; bottom:4vh; display:flex; gap:14px; align-items:center;
+  }
+  .question-view .q-nav-btn{
+    background:var(--navy-2); border:2px solid #2A3E63; color:var(--paper); border-radius:12px;
+    padding:12px 22px; font-size:clamp(13px,1.3vw,16px); font-weight:700; cursor:pointer; font-family:'Inter';
+  }
+  .question-view .q-nav-btn:hover{border-color:var(--gold);}
+  .question-view .q-close{
+    position:absolute; top:4vh; right:5vw; background:transparent; border:2px solid #2A3E63; color:var(--muted);
+    border-radius:10px; padding:8px 16px; font-size:clamp(12px,1.2vw,15px); font-weight:700; cursor:pointer; font-family:'Inter';
+  }
+  .question-view .q-close:hover{border-color:var(--red); color:var(--red);}
+
+  /* ---------- PROGRESS BAR (Rodada X de N) ---------- */
+  .progress-bar{display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:26px; flex-wrap:wrap;}
+  .prog-step{
+    width:36px; height:36px; border-radius:50%; background:var(--navy-2); border:2px solid #2A3E63;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px;
+    color:var(--muted); flex:0 0 auto; cursor:pointer; transition:transform .15s ease;
+  }
+  .prog-step:hover{transform:scale(1.08);}
+  .prog-step.done{background:var(--green); border-color:var(--green); color:#fff;}
+  .prog-step.current{
+    background:var(--gold); border-color:var(--gold); color:var(--navy);
+    box-shadow:0 0 0 5px rgba(232,169,59,0.25);
+  }
+  .prog-line{width:30px; height:3px; background:#2A3E63; flex:0 0 auto;}
+  .prog-line.done{background:var(--green);}
+  .progress-label{text-align:center; color:var(--muted); font-size:12px; margin-top:-16px; margin-bottom:26px; letter-spacing:0.05em; text-transform:uppercase;}
+
+  /* ---------- GOLDEN GLOW: BIG LEAD ---------- */
+  .team-card.big-lead{
+    animation:goldPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes goldPulse{
+    0%,100%{ box-shadow:0 0 22px 4px rgba(232,169,59,0.35), 0 0 0 2px var(--gold) inset; }
+    50%{ box-shadow:0 0 54px 14px rgba(232,169,59,0.65), 0 0 0 2px var(--gold) inset; }
+  }
+  #confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:80; }
+
+  /* ---------- COUNTDOWN (before revealing a question) ---------- */
+  .countdown-view{
+    position:fixed; inset:0; background:var(--navy); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:60; gap:2vh;
+  }
+  .countdown-view .cd-label{
+    color:var(--gold); font-size:clamp(14px,2vw,22px); font-weight:800; letter-spacing:0.2em; text-transform:uppercase;
+  }
+  .countdown-view .cd-number{
+    font-family:'Bebas Neue',sans-serif; font-size:clamp(120px,22vw,320px); color:var(--gold); line-height:1;
+    animation:cdPulse 0.65s ease-out;
+  }
+  @keyframes cdPulse{
+    0%{ transform:scale(0.4); opacity:0; }
+    35%{ transform:scale(1.2); opacity:1; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ===================== FIREBASE SETUP =====================
+const firebaseConfig = {
+  apiKey: "AIzaSyA0MZTq-yujPT4W2lpKaTLkWQ9I-luo7Mk",
+  authDomain: "gincana-credipronto.firebaseapp.com",
+  databaseURL: "https://gincana-credipronto-default-rtdb.firebaseio.com",
+  projectId: "gincana-credipronto",
+  storageBucket: "gincana-credipronto.firebasestorage.app",
+  messagingSenderId: "453795850824",
+  appId: "1:453795850824:web:ff13bcca0bd8dfc549c67d"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let isConnected = true;
+db.ref('.info/connected').on('value', snap => { isConnected = !!snap.val(); });
+
+// ===================== SOUND ENGINE (synthesized, no external files) =====================
+let audioCtx = null;
+let soundEnabled = true;
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playTone(freq, duration, type='sine', gainVal=0.3, startTime=0){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain).connect(audioCtx.destination);
+  const t = audioCtx.currentTime + startTime;
+  gain.gain.setValueAtTime(gainVal, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  osc.start(t);
+  osc.stop(t + duration + 0.02);
+}
+function createNoiseBuffer(duration){
+  const bufferSize = Math.floor(audioCtx.sampleRate * duration);
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+  return buffer;
+}
+function playClap(delay=0, gainMultiplier=1){
+  const buffer = createNoiseBuffer(0.06);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 900 + Math.random()*2000; // wider spread = more varied "hand size"
+  filter.Q.value = 0.5 + Math.random()*0.7;
+  const gain = audioCtx.createGain();
+  const peak = (0.22 + Math.random()*0.18) * gainMultiplier;
+  src.connect(filter).connect(gain).connect(audioCtx.destination);
+  const t = audioCtx.currentTime + delay;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.001), t + 0.004); // sharp attack, like a real clap
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  src.start(t);
+}
+// Nota < 5: buzina (dois tons curtos, tipo "erro" de programa de auditório)
+function playHorn(){
+  ensureAudio();
+  playTone(220, 0.35, 'sawtooth', 0.28, 0);
+  playTone(185, 0.4, 'sawtooth', 0.28, 0.28);
+}
+// Nota 5-8: aplausos (várias palmas sintetizadas em sequência)
+function playApplause(){
+  ensureAudio();
+  const totalDuration = 2.1;
+  const numClaps = 55;
+  for(let i=0; i<numClaps; i++){
+    const tNorm = Math.random(); // random position within the applause, 0..1
+    const delay = tNorm * totalDuration;
+    // Shape overall intensity like real applause: builds up, sustains, tapers off —
+    // instead of every clap hitting the same volume regardless of when it lands.
+    let envelope;
+    if(tNorm < 0.15) envelope = 0.3 + (tNorm/0.15)*0.7;       // rising into the applause
+    else if(tNorm < 0.7) envelope = 1;                          // full sustained clapping
+    else envelope = Math.max(0.15, 1 - (tNorm-0.7)/0.3);        // tapering out
+    playClap(delay, envelope);
+  }
+}
+// Nota 9-10: torcida gritando (ruído filtrado em "swoosh" + palmas + tom triunfante)
+function playCheer(){
+  ensureAudio();
+  const duration = 1.7;
+  const buffer = createNoiseBuffer(duration);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+  filter.frequency.linearRampToValueAtTime(2400, audioCtx.currentTime + duration*0.55);
+  filter.frequency.linearRampToValueAtTime(1300, audioCtx.currentTime + duration);
+  filter.Q.value = 0.6;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.15);
+  gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + duration*0.7);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  src.connect(filter).connect(gain).connect(audioCtx.destination);
+  src.start();
+  for(let i=0;i<12;i++) playClap(Math.random()*duration*0.85);
+  playTone(440, 0.6, 'triangle', 0.16, 0.1);
+  playTone(660, 0.6, 'triangle', 0.13, 0.32);
+}
+function playSoundForScore(nota){
+  if(!soundEnabled) return;
+  const n = Number(nota);
+  if(n < 5) playHorn();
+  else if(n <= 8) playApplause();
+  else playCheer();
+}
+// Suspense drum roll before revealing a question — accelerating noise hits.
+function playDrumRoll(duration=1.9){
+  if(!soundEnabled) return;
+  ensureAudio();
+  const startTime = audioCtx.currentTime;
+  // Fixed number of hits (not a while-loop bound by elapsed time) — guarantees
+  // this always terminates, even though the accelerating interval converges
+  // to a fixed total well before reaching an arbitrary `duration` value.
+  const numHits = 18;
+  let t = 0, interval = 0.16;
+  for(let i=0; i<numHits; i++){
+    const delay = t;
+    const buffer = createNoiseBuffer(0.05);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 900; filter.Q.value = 1;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.22, startTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + delay + 0.05);
+    src.connect(filter).connect(gain).connect(audioCtx.destination);
+    src.start(startTime + delay);
+    t += interval;
+    interval *= 0.87; // accelerates like a real drum roll
+  }
+}
+// Bright cymbal-like hit for the moment the question is revealed.
+function playRevealHit(){
+  if(!soundEnabled) return;
+  ensureAudio();
+  const buffer = createNoiseBuffer(0.55);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass'; filter.frequency.value = 3000;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.55);
+  src.connect(filter).connect(gain).connect(audioCtx.destination);
+  src.start();
+  playTone(880, 0.4, 'triangle', 0.18, 0);
+}
+
+// ===================== CONFETTI (canvas particles, no external libs) =====================
+function launchConfetti(){
+  const canvas = document.createElement('canvas');
+  canvas.id = 'confetti-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const colors = ['#E8A93B','#F4C56B','#FFFFFF','#3E9B5C'];
+  const particles = Array.from({length:140}, () => ({
+    x: Math.random()*canvas.width,
+    y: -20 - Math.random()*canvas.height*0.5,
+    r: 4 + Math.random()*5,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    vy: 2 + Math.random()*3,
+    vx: -1.5 + Math.random()*3,
+    rot: Math.random()*360,
+    vrot: -6 + Math.random()*12
+  }));
+  const duration = 3200;
+  const start = performance.now();
+  function frame(now){
+    const elapsed = now - start;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);
+      ctx.restore();
+    });
+    if(elapsed < duration){
+      requestAnimationFrame(frame);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// Tracks which votes have already triggered a sound, so reconnects/re-renders
+// don't replay effects for votes that were already announced.
+let announcedVotes = {};
+let firstRoundsSnapshot = true;
+function processVotesForSound(votes){
+  if(firstRoundsSnapshot){
+    firstRoundsSnapshot = false;
+    for(const r in votes){
+      for(const team of ['A','B']){
+        for(const j in (votes[r][team]||{})){
+          announcedVotes[`${r}-${team}-${j}`] = votes[r][team][j].nota;
+        }
+      }
+    }
+    return;
+  }
+  for(const r in votes){
+    for(const team of ['A','B']){
+      for(const j in (votes[r][team]||{})){
+        const key = `${r}-${team}-${j}`;
+        const nota = votes[r][team][j].nota;
+        if(announcedVotes[key] !== nota){
+          playSoundForScore(nota);
+          announcedVotes[key] = nota;
+        }
+      }
+    }
+  }
+}
+
+// ===================== APP CONFIG =====================
+const DEFAULT_CONFIG = {
+  objections: [
+    "Aluguel é mais barato que a parcela",
+    "Medo de juros altos / CET",
+    "Vou esperar a Selic cair mais",
+    "Nome sujo / restrição no CPF",
+    "Prefiro juntar e comprar à vista",
+    "Perfil investidor: prefiro alugar e deixar meu dinheiro rendendo"
+  ],
+  teamNames: ["Equipe A", "Equipe B"],
+  corretores: { A: ["", "", "", "", "", ""], B: ["", "", "", "", "", ""] }
+};
+const NUM_ROUNDS = 6;
+const BIG_LEAD_THRESHOLD = 5; // point gap that triggers the golden glow + confetti celebration
+let bigLeadActive = false; // tracks whether we've already celebrated the current lead streak
+
+let state = {
+  role: null,
+  judgeName: null,
+  activeRound: 1,
+  config: null,
+  votes: {},          // round -> {A:{judgeSlug:{judge,nota}}, B:{...}}
+  voteStatus: {},      // "round-team" -> 'saving' | 'saved' | 'error'
+  pendingScore: {}     // "round-team" -> last tapped score (optimistic)
+};
+
+const app = document.getElementById('app');
+
+function slug(str){
+  return str.toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'x';
+}
+function scoreBand(n){
+  n = Number(n);
+  if(n <= 3) return 'low';
+  if(n <= 6) return 'mid';
+  return 'high';
+}
+
+// ===================== DATA LAYER (Firebase) =====================
+async function loadConfig(){
+  const snap = await db.ref('config').once('value');
+  if(snap.exists()){
+    const cfg = snap.val();
+    const migrated = migrateConfigIfNeeded(cfg);
+    if(migrated.changed) await db.ref('config').set(migrated.cfg);
+    return migrated.cfg;
+  }
+  await db.ref('config').set(DEFAULT_CONFIG);
+  return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+}
+// If a config saved before NUM_ROUNDS was increased has fewer rounds than
+// needed, pad it with the defaults instead of forcing a manual reset.
+function migrateConfigIfNeeded(cfg){
+  let changed = false;
+  if(!cfg.objections) cfg.objections = [];
+  if(!cfg.corretores) cfg.corretores = {A:[], B:[]};
+  if(!cfg.corretores.A) cfg.corretores.A = [];
+  if(!cfg.corretores.B) cfg.corretores.B = [];
+  while(cfg.objections.length < NUM_ROUNDS){
+    const idx = cfg.objections.length;
+    cfg.objections.push(DEFAULT_CONFIG.objections[idx] || `Rodada ${idx+1}`);
+    changed = true;
+  }
+  while(cfg.corretores.A.length < NUM_ROUNDS){ cfg.corretores.A.push(""); changed = true; }
+  while(cfg.corretores.B.length < NUM_ROUNDS){ cfg.corretores.B.push(""); changed = true; }
+  return {cfg, changed};
+}
+function watchConfig(cb){
+  db.ref('config').on('value', snap => { if(snap.exists()) cb(snap.val()); });
+}
+async function saveConfig(cfg){
+  state.config = cfg;
+  await db.ref('config').set(cfg);
+}
+
+// Each judge writes ONLY their own leaf: rounds/{round}/{team}/{judgeSlug}
+// No read-modify-write needed, so two judges voting at once can never overwrite each other.
+async function castVote(round, team, judgeName, nota){
+  try{
+    await db.ref(`rounds/${round}/${team}/${slug(judgeName)}`).set({ judge: judgeName, nota });
+    return true;
+  }catch(e){
+    console.error('vote save failed', e);
+    return false;
+  }
+}
+async function loadRound(round){
+  const snap = await db.ref(`rounds/${round}`).once('value');
+  return snap.exists() ? snap.val() : {A:{}, B:{}};
+}
+function watchRounds(cb){
+  db.ref('rounds').on('value', snap => { cb(snap.val() || {}); });
+}
+async function resetAllVotes(){
+  await db.ref('rounds').remove();
+}
+
+// ===================== RENDER ROUTER =====================
+function render(){
+  if(state.role === null || state.role === 'home') renderHome();
+  else if(state.role === 'judge') renderJudge();
+  else if(state.role === 'display') renderDisplay();
+}
+
+function renderHome(){
+  app.innerHTML = `
+    <div class="home">
+      <div class="kicker">Gincana · Crédito Imobiliário</div>
+      <div class="credit-line">criado por Henrique Tenório</div>
+      <h1>Placar<br><span>Ao Vivo</span></h1>
+      <div class="home-buttons">
+        <button class="role-btn primary" id="btn-judge"><span class="emoji">📱</span> Sou Jurado</button>
+        <button class="role-btn secondary" id="btn-display"><span class="emoji">🖥️</span> Modo Telão</button>
+      </div>
+      <div class="conn-status"><span class="conn-dot ${isConnected?'':'off'}"></span>${isConnected ? 'Conectado' : 'Sem conexão…'}</div>
+    </div>
+  `;
+  document.getElementById('btn-judge').onclick = () => { state.role='judge'; render(); };
+  document.getElementById('btn-display').onclick = async () => {
+    ensureAudio(); // must run synchronously, before any await, or Chrome blocks audio later
+    state.role='display';
+    state.config = await loadConfig();
+    render();
+    watchConfig(cfg => { state.config = cfg; if(state.role==='display') renderDisplay(); });
+    watchRounds(votes => {
+      state.votes = votes;
+      processVotesForSound(votes);
+      if(state.role==='display') renderDisplay();
+    });
+  };
+}
+
+// ---------------- JUDGE VIEW ----------------
+let judgeConfigWatched = false;
+async function renderJudge(){
+  if(!state.config) state.config = await loadConfig();
+  if(!judgeConfigWatched){
+    judgeConfigWatched = true;
+    watchConfig(cfg => { state.config = cfg; if(state.role==='judge' && state.judgeName) renderJudge(); });
+  }
+
+  if(!state.judgeName){
+    app.innerHTML = `
+      <div class="judge-wrap">
+        <div class="top-bar"><button class="back-link" id="back">← voltar</button><span></span></div>
+        <div class="name-card">
+          <h2>Qual seu nome?</h2>
+          <p>Assim identificamos sua nota no placar.</p>
+          <input id="nameInput" placeholder="Ex: Ricardo (sênior)" />
+          <button class="go-btn" id="startBtn">Começar a avaliar</button>
+        </div>
+      </div>`;
+    document.getElementById('back').onclick = () => { state.role='home'; render(); };
+    document.getElementById('startBtn').onclick = () => {
+      const v = document.getElementById('nameInput').value.trim();
+      if(!v) return;
+      state.judgeName = v;
+      db.ref(`rounds/${state.activeRound}`).once('value'); // warm connection
+      renderJudge();
+    };
+    document.getElementById('nameInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter') document.getElementById('startBtn').click();
+    });
+    return;
+  }
+
+  const round = state.activeRound;
+  const roundData = await loadRound(round);
+  state.votes[round] = roundData;
+
+  let tabsHtml = '';
+  for(let r=1; r<=NUM_ROUNDS; r++){
+    tabsHtml += `<div class="round-tab ${r===state.activeRound?'active':''}" data-round="${r}">Rodada ${r}</div>`;
+  }
+
+  const theme = state.config.objections[round-1] || `Rodada ${round}`;
+  const teamKeys = ['A','B'];
+
+  let teamsHtml = '';
+  teamKeys.forEach((tk, idx) => {
+    const teamName = state.config.teamNames[idx];
+    const corretor = state.config.corretores[tk][round-1];
+    const existing = (roundData[tk] || {})[slug(state.judgeName)];
+    const statusKey = `${round}-${tk}`;
+    const status = state.voteStatus[statusKey];
+    const pending = state.pendingScore[statusKey];
+    const displayedScore = (pending !== undefined) ? pending : (existing ? Number(existing.nota) : undefined);
+    let btns = '';
+    for(let n=0; n<=10; n++){
+      const sel = displayedScore === n;
+      btns += `<button class="score-btn ${sel?('selected '+scoreBand(n)):''}" data-round="${round}" data-team="${tk}" data-score="${n}">${n}</button>`;
+    }
+    let badgeHtml = '';
+    if(status === 'saving') badgeHtml = `<span style="color:var(--muted);">⏳ Enviando…</span>`;
+    else if(status === 'error') badgeHtml = `<span style="color:var(--red);">⚠ Não salvou — toque na nota de novo</span>`;
+    else if(existing) badgeHtml = `<span style="color:var(--green);">✓ Nota enviada</span>`;
+    teamsHtml += `
+      <div class="team-block">
+        <div class="team-name"><span>${teamName}</span></div>
+        ${corretor ? `<div class="corretor">Corretor: ${corretor}</div>` : ''}
+        <div class="score-grid">${btns}</div>
+        <div class="saved-badge" id="saved-${tk}">${badgeHtml}</div>
+      </div>`;
+  });
+
+  app.innerHTML = `
+    <div class="judge-wrap">
+      <div class="top-bar">
+        <button class="back-link" id="back">← trocar papel</button>
+        <span class="judge-tag">👤 ${state.judgeName}</span>
+      </div>
+      <div class="round-tabs">${tabsHtml}</div>
+      <div class="objection-card">
+        <div class="eyebrow">Objeção do cliente</div>
+        <h3>“${theme}”</h3>
+      </div>
+      ${teamsHtml}
+    </div>
+  `;
+
+  document.getElementById('back').onclick = () => { state.role='home'; state.judgeName=null; render(); };
+  document.querySelectorAll('.round-tab').forEach(el=>{
+    el.onclick = () => { state.activeRound = Number(el.dataset.round); renderJudge(); };
+  });
+  document.querySelectorAll('.score-btn').forEach(el=>{
+    el.onclick = async () => {
+      const r = Number(el.dataset.round), team = el.dataset.team, score = Number(el.dataset.score);
+      const statusKey = `${r}-${team}`;
+      state.pendingScore[statusKey] = score;
+      state.voteStatus[statusKey] = 'saving';
+      renderJudge();
+      const ok = await castVote(r, team, state.judgeName, score);
+      state.voteStatus[statusKey] = ok ? 'saved' : 'error';
+      if(ok) delete state.pendingScore[statusKey];
+      renderJudge();
+    };
+  });
+}
+
+// ---------------- DISPLAY VIEW ----------------
+function computeTotals(){
+  const totals = {A:0, B:0};
+  for(let r=1; r<=NUM_ROUNDS; r++){
+    const roundData = state.votes[r] || {A:{},B:{}};
+    ['A','B'].forEach(team=>{
+      const entries = Object.values(roundData[team] || {});
+      if(entries.length){
+        const avg = entries.reduce((s,v)=>s+Number(v.nota),0)/entries.length;
+        totals[team] += avg;
+      }
+    });
+  }
+  return totals;
+}
+
+function progressBarHtml(){
+  let segs = '';
+  for(let r=1; r<=NUM_ROUNDS; r++){
+    const roundData = state.votes[r] || {A:{},B:{}};
+    const hasVotes = Object.keys(roundData.A||{}).length>0 || Object.keys(roundData.B||{}).length>0;
+    const isCurrent = r === state.activeRound;
+    let cls = 'prog-step';
+    if(isCurrent) cls += ' current';
+    else if(hasVotes) cls += ' done';
+    segs += `<div class="${cls}" data-step="${r}">${r}</div>`;
+    if(r < NUM_ROUNDS){
+      const nextHasVotes = hasVotes; // line "fills" once the round it follows has votes
+      segs += `<div class="prog-line ${nextHasVotes?'done':''}"></div>`;
+    }
+  }
+  return `<div class="progress-bar">${segs}</div><div class="progress-label">Rodada ${state.activeRound} de ${NUM_ROUNDS}</div>`;
+}
+
+function renderDisplay(){
+  const totals = computeTotals();
+  const teamNames = state.config.teamNames;
+  const leaderIsA = totals.A > totals.B;
+  const leaderIsB = totals.B > totals.A;
+  const diff = Math.abs(totals.A - totals.B);
+  const bigLead = diff >= BIG_LEAD_THRESHOLD;
+  if(bigLead && !bigLeadActive){
+    launchConfetti();
+    bigLeadActive = true;
+  } else if(!bigLead){
+    bigLeadActive = false;
+  }
+
+  const allJudges = [...new Set(
+    Object.values(state.votes).flatMap(rd =>
+      [...Object.values(rd.A||{}), ...Object.values(rd.B||{})].map(v=>v.judge)
+    )
+  )];
+
+  let rowsHtml = '';
+  for(let r=1; r<=NUM_ROUNDS; r++){
+    const theme = state.config.objections[r-1] || '';
+    const isCurrent = r === state.activeRound;
+    const roundData = state.votes[r] || {A:{},B:{}};
+    ['A','B'].forEach((tk, i) => {
+      const entries = Object.values(roundData[tk] || {});
+      const avg = entries.length ? (entries.reduce((s,v)=>s+Number(v.nota),0)/entries.length) : null;
+      const pillsHtml = allJudges.length
+        ? allJudges.map(j=>{
+            const v = entries.find(x=>x.judge===j);
+            return v
+              ? `<span class="score-pill ${scoreBand(v.nota)}" title="${j}">${v.nota}</span>`
+              : `<span class="score-pill pending" title="${j}">…</span>`;
+          }).join(' ')
+        : `<span class="score-pill pending">aguardando</span>`;
+      const corretor = state.config.corretores[tk][r-1] || '';
+      rowsHtml += `
+        <tr class="${isCurrent?'current-round':''}" data-round-row="${r}" style="cursor:pointer;">
+          ${i===0 ? `<td rowspan="2" class="theme-cell"><span class="rnum">${r}</span>${theme}</td>` : ''}
+          <td>${teamNames[i]}${corretor ? ` <span style="color:var(--muted);font-weight:400;">— ${corretor}</span>` : ''}</td>
+          <td>${pillsHtml}</td>
+          <td class="avg-cell">${avg !== null ? avg.toFixed(1) : '—'}</td>
+        </tr>`;
+    });
+  }
+
+  app.innerHTML = `
+    <div class="display-wrap">
+      <div class="display-header">
+        <div>
+          <div class="kicker">Gincana · Crédito Imobiliário</div>
+          <div class="credit-line">criado por Henrique Tenório</div>
+          <h1>Placar ao Vivo</h1>
+        </div>
+        <div class="header-actions">
+          <span class="live-tag"><span class="live-dot ${isConnected?'':'off'}"></span>${isConnected ? 'ao vivo' : 'reconectando…'}</span>
+          <button class="icon-btn" id="showQBtn">📢 Mostrar Pergunta</button>
+          <button class="icon-btn" id="testSoundBtn">🔈 Testar Som</button>
+          <button class="icon-btn" id="muteBtn">${soundEnabled ? '🔊 Som' : '🔇 Mudo'}</button>
+          <button class="icon-btn" id="editBtn">✏️ Editar rodadas</button>
+          <button class="icon-btn" id="resetBtn">↺ Zerar placar</button>
+        </div>
+      </div>
+
+      ${progressBarHtml()}
+
+      <div class="scoreboard">
+        <div class="team-card ${leaderIsA?'leader':''} ${bigLead && leaderIsA ? 'big-lead':''}">
+          ${leaderIsA?'<div class="trophy">🏆</div>':''}
+          <div class="team-title">${teamNames[0]}</div>
+          <div class="total">${totals.A.toFixed(1)}</div>
+          <div class="total-label">pontos acumulados</div>
+        </div>
+        <div class="team-card ${leaderIsB?'leader':''} ${bigLead && leaderIsB ? 'big-lead':''}">
+          ${leaderIsB?'<div class="trophy">🏆</div>':''}
+          <div class="team-title">${teamNames[1]}</div>
+          <div class="total">${totals.B.toFixed(1)}</div>
+          <div class="total-label">pontos acumulados</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-title"><h2>Rodadas</h2></div>
+        <table class="rounds-table">
+          <thead><tr><th>Objeção</th><th>Equipe</th><th>Notas dos jurados</th><th>Média</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="judges-list">${allJudges.length ? 'Jurados conectados: ' + allJudges.join(', ') : 'Aguardando jurados entrarem pelo celular…'}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('showQBtn').onclick = () => showCountdown(state.activeRound);
+  document.getElementById('testSoundBtn').onclick = () => {
+    ensureAudio();
+    playApplause();
+  };
+  document.querySelectorAll('[data-round-row]').forEach(el=>{
+    el.onclick = () => { showCountdown(Number(el.dataset.roundRow)); };
+  });
+  document.querySelectorAll('[data-step]').forEach(el=>{
+    el.onclick = () => { state.activeRound = Number(el.dataset.step); renderDisplay(); };
+  });
+  document.getElementById('resetBtn').onclick = async () => {
+    if(!confirm('Zerar todas as notas do placar?')) return;
+    await resetAllVotes();
+    announcedVotes = {};
+  };
+  document.getElementById('muteBtn').onclick = () => {
+    soundEnabled = !soundEnabled;
+    if(soundEnabled) ensureAudio();
+    renderDisplay();
+  };
+  document.getElementById('editBtn').onclick = () => renderEditPanel();
+}
+
+function renderEditPanel(){
+  const cfg = state.config;
+  let rows = '';
+  for(let r=1; r<=NUM_ROUNDS; r++){
+    rows += `
+      <div style="background:var(--navy);border-radius:10px;padding:14px;margin-bottom:10px;">
+        <div style="color:var(--gold);font-weight:700;font-size:13px;margin-bottom:6px;">RODADA ${r}</div>
+        <input class="theme-input" style="margin-bottom:8px;" data-type="theme" data-round="${r}" value="${cfg.objections[r-1]||''}" placeholder="Objeção do cliente" />
+        <div style="display:flex;gap:8px;">
+          <input class="corretor-input" data-type="corretorA" data-round="${r}" value="${cfg.corretores.A[r-1]||''}" placeholder="Corretor ${cfg.teamNames[0]}" />
+          <input class="corretor-input" data-type="corretorB" data-round="${r}" value="${cfg.corretores.B[r-1]||''}" placeholder="Corretor ${cfg.teamNames[1]}" />
+        </div>
+      </div>`;
+  }
+  app.innerHTML = `
+    <div class="display-wrap" style="max-width:640px;">
+      <div class="display-header"><h1 style="font-size:32px;">Editar Rodadas</h1></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <input class="theme-input" id="teamAName" value="${cfg.teamNames[0]}" placeholder="Nome da equipe A" />
+        <input class="theme-input" id="teamBName" value="${cfg.teamNames[1]}" placeholder="Nome da equipe B" />
+      </div>
+      ${rows}
+      <button class="go-btn" id="saveCfg" style="margin-top:6px;">Salvar</button>
+      <button class="icon-btn" id="cancelCfg" style="margin-top:10px;width:100%;">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('saveCfg').onclick = async () => {
+    const newCfg = JSON.parse(JSON.stringify(cfg));
+    newCfg.teamNames = [document.getElementById('teamAName').value.trim() || 'Equipe A', document.getElementById('teamBName').value.trim() || 'Equipe B'];
+    document.querySelectorAll('[data-type="theme"]').forEach(el=>{
+      newCfg.objections[Number(el.dataset.round)-1] = el.value;
+    });
+    document.querySelectorAll('[data-type="corretorA"]').forEach(el=>{
+      newCfg.corretores.A[Number(el.dataset.round)-1] = el.value;
+    });
+    document.querySelectorAll('[data-type="corretorB"]').forEach(el=>{
+      newCfg.corretores.B[Number(el.dataset.round)-1] = el.value;
+    });
+    await saveConfig(newCfg);
+    renderDisplay();
+  };
+  document.getElementById('cancelCfg').onclick = () => renderDisplay();
+}
+
+function showCountdown(round){
+  state.activeRound = round;
+  playDrumRoll(1.9);
+  let n = 3;
+  const renderTick = () => {
+    app.innerHTML = `
+      <div class="countdown-view">
+        <div class="cd-label">Preparem-se…</div>
+        <div class="cd-number">${n}</div>
+      </div>`;
+  };
+  renderTick();
+  const iv = setInterval(() => {
+    n--;
+    if(n > 0){
+      renderTick();
+    } else {
+      clearInterval(iv);
+      playRevealHit();
+      renderQuestionView(round);
+    }
+  }, 650);
+}
+
+function renderQuestionView(round){
+  state.activeRound = round;
+  const theme = state.config.objections[round-1] || `Rodada ${round}`;
+  app.innerHTML = `
+    <div class="question-view">
+      <button class="q-close" id="qClose">✕ Voltar ao placar</button>
+      <div class="q-round-tag">Rodada ${round} de ${NUM_ROUNDS}</div>
+      <div class="q-eyebrow">Objeção do cliente</div>
+      <div class="q-text">“${theme}”</div>
+      <div class="q-nav">
+        <button class="q-nav-btn" id="qPrev" ${round<=1?'disabled style="opacity:0.35;cursor:default;"':''}>← Anterior</button>
+        <button class="q-nav-btn" id="qNext" ${round>=NUM_ROUNDS?'disabled style="opacity:0.35;cursor:default;"':''}>Próxima →</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('qClose').onclick = () => renderDisplay();
+  const prevBtn = document.getElementById('qPrev');
+  const nextBtn = document.getElementById('qNext');
+  if(round>1) prevBtn.onclick = () => renderQuestionView(round-1);
+  if(round<NUM_ROUNDS) nextBtn.onclick = () => renderQuestionView(round+1);
+}
+
+render();
+</script>
+</body>
+</html>
